@@ -12,6 +12,7 @@ import numpy as np
 import pandas as pd
 from sklearn.metrics import confusion_matrix, classification_report
 import tqdm
+from collections import defaultdict
 import matplotlib.pyplot as plt
 from collections import Counter
 import pickle
@@ -125,18 +126,26 @@ def process_dialogues(train_df):
         sentence_embeddings.append(embeddings)
     return sentence_embeddings
 
+
 def process_VAD(train_df, csvread):
-    def clean_and_get_values(sentence):
-        cleaned_words = [re.sub(r'[^a-zA-Z]', '', word).lower() for word in sentence.split()]
-        return [[float(csvread.at[word, prop]) if word in csvread.index else 0 for prop in ['Valence', 'Arousal', 'Dominance']] for word in cleaned_words]
+    valen = []
+    aros = []
+    domi = []
+    track = defaultdict(list)
 
-    # Vectorizando la limpieza y obtención de valores
-    utterance_values = train_df['utterances'].apply(lambda x: [clean_and_get_values(sentence) for sentence in x])
-
-    # Separar en listas de Valence, Arousal y Dominance
-    valen = utterance_values.apply(lambda x: [[val[0] for val in sentence] for sentence in x])
-    aros = utterance_values.apply(lambda x: [[val[1] for val in sentence] for sentence in x])
-    domi = utterance_values.apply(lambda x: [[val[2] for val in sentence] for sentence in x])
+    for utterances in train_df['utterances']:
+        for sentence in utterances:
+            sentence = sentence.lower().split()
+            for word in sentence:
+                cleaned_word = re.sub(r'[^a-zA-Z]', '', word)
+                if cleaned_word in csvread.index and cleaned_word not in track:
+                    track[cleaned_word].append(csvread['Valence'][cleaned_word])
+                    track[cleaned_word].append(csvread['Arousal'][cleaned_word])
+                    track[cleaned_word].append(csvread['Dominance'][cleaned_word])
+        
+        valen.append([[float(track[re.sub(r'[^a-zA-Z]', '', word)][0]) if re.sub(r'[^a-zA-Z]', '', word) in track else 0 for word in sentence.lower().split()] for sentence in utterances])
+        aros.append([[float(track[re.sub(r'[^a-zA-Z]', '', word)][1]) if re.sub(r'[^a-zA-Z]', '', word) in track else 0 for word in sentence.lower().split()] for sentence in utterances])
+        domi.append([[float(track[re.sub(r'[^a-zA-Z]', '', word)][2]) if re.sub(r'[^a-zA-Z]', '', word) in track else 0 for word in sentence.lower().split()] for sentence in utterances])
 
     return valen, aros, domi
 
