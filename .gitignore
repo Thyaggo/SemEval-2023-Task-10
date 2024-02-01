@@ -8,7 +8,8 @@
 .ipynb_checkpoints
 */.ipynb_checkpoints/*
 
-
+#Lightning
+lightning_logs/
 
 # IPython
 profile_default/
@@ -199,3 +200,5 @@ pyvenv.cfg
 pip-selfcheck.json
 
 # End of https://www.toptal.com/developers/gitignore/api/python,jupyternotebooks,venv
+
+.vscode/
